@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Channel Telematics Server Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --border: #d9e1ec;
+      --text: #10233f;
+      --subtext: #5e708c;
+      --navy: #153b6d;
+      --teal: #1e8e89;
+      --mint: #71c9c2;
+      --gold: #c89b3c;
+      --red: #c65757;
+      --soft-blue: #dde8f5;
+      --soft-teal: #e2f3f1;
+      --soft-red: #f8e5e2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top left, #ffffff 0%, var(--bg) 60%, #ecf1f8 100%);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.94);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: 0 8px 22px rgba(16,35,63,0.05);
+    }
+
+    .hero { padding: 28px; margin-bottom: 18px; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      background: var(--soft-blue);
+      color: var(--navy);
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: 42px;
+      line-height: 1.08;
+    }
+
+    p.lead {
+      margin: 0;
+      max-width: 820px;
+      color: var(--subtext);
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .preset-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .preset {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+    }
+
+    .room, .controls, .section { padding: 22px; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .section h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+
+    .section p {
+      margin: 0 0 16px;
+      color: var(--subtext);
+      line-height: 1.65;
+    }
+
+    .control-block {
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 16px;
+      background: var(--panel);
+      margin-bottom: 12px;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .control-label {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .control-hint {
+      color: var(--subtext);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .badge {
+      background: var(--soft-blue);
+      color: var(--navy);
+      border-radius: 16px;
+      padding: 7px 12px;
+      font-weight: 700;
+      font-size: 14px;
+      min-width: 56px;
+      text-align: center;
+    }
+
+    input[type=range] { width: 100%; }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 18px;
+      padding: 14px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .primary {
+      background: var(--navy);
+      color: white;
+    }
+
+    .secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 16px;
+      background: var(--panel);
+    }
+
+    .metric-title {
+      color: var(--subtext);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 800;
+      margin-top: 8px;
+    }
+
+    .metric-sub {
+      color: var(--subtext);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .server-layout {
+      display: grid;
+      grid-template-columns: 0.9fr 1.4fr 0.9fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .subcard {
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 16px;
+      background: linear-gradient(180deg, #ffffff 0%, #f9fbfd 100%);
+    }
+
+    .subcard h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .flow-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    .bar-bg {
+      flex: 1;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--soft-blue);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--mint);
+    }
+
+    .channels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .channel {
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      padding: 12px;
+      background: #fbfcfe;
+      transition: all .2s ease;
+    }
+
+    .channel.active {
+      background: linear-gradient(180deg, #ecf8f6 0%, #f7fcfb 100%);
+      border-color: #b8e1db;
+    }
+
+    .channel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .channel-pill {
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--soft-blue);
+      color: var(--navy);
+    }
+
+    .channel.active .channel-pill {
+      background: var(--soft-teal);
+      color: var(--teal);
+    }
+
+    .mini-progress {
+      margin-top: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--soft-blue);
+      overflow: hidden;
+    }
+
+    .mini-progress div {
+      height: 100%;
+      background: var(--teal);
+      border-radius: 999px;
+    }
+
+    .legend-box {
+      border-radius: 18px;
+      padding: 12px;
+      background: var(--soft-red);
+      color: var(--red);
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .heatmap-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .heatmap-label {
+      width: 58px;
+      font-size: 12px;
+      color: var(--subtext);
+      font-weight: 700;
+    }
+
+    .heatmap-grid {
+      display: flex;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+
+    .heat-cell {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      border: 1px solid rgba(21,59,109,0.08);
+    }
+
+    .note-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .note {
+      border-radius: 18px;
+      padding: 14px;
+      line-height: 1.6;
+    }
+
+    .note strong { color: var(--text); }
+
+    @media (max-width: 1100px) {
+      .main-grid, .grid-2, .grid-3, .server-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card hero">
+      <div class="tag">Project 4 • Multi-Channel Telematics Server</div>
+      <h1>Interactive simulation dashboard</h1>
+      <p class="lead">
+        This dashboard shows how a loss system evolves when traffic intensity, service duration,
+        and channel capacity change. The room schema gives a quick operational view, while the
+        analytical charts below confirm the same behavior quantitatively.
+      </p>
+      <div class="preset-row">
+        <button class="preset" onclick="applyPreset('underloaded')">Underloaded</button>
+        <button class="preset" onclick="applyPreset('balanced')">Balanced</button>
+        <button class="preset" onclick="applyPreset('near')">Near saturation</button>
+        <button class="preset" onclick="applyPreset('saturated')">Saturated</button>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div class="card room">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+          <div>
+            <h2 style="margin:0; font-size:28px;">Interactive server room</h2>
+            <p style="margin-top:8px; color:var(--subtext); max-width:800px;">
+              Incoming calls are assigned to the lowest-index available channel. If no channel is free,
+              the call is rejected immediately. Changing the controls updates this schema and all charts.
+            </p>
+          </div>
+          <div id="statusPill"></div>
+        </div>
+
+        <div class="server-layout">
+          <div class="subcard">
+            <h3>Incoming demand</h3>
+            <div id="flowBox"></div>
+            <div id="overflowBox"></div>
+          </div>
+
+          <div class="subcard">
+            <h3>Multi-channel telematics server</h3>
+            <div class="channels-grid" id="channelsGrid"></div>
+          </div>
+
+          <div class="subcard">
+            <h3>Parameter effect</h3>
+            <div class="note-list">
+              <div class="note" style="background:var(--soft-blue)">
+                <strong>Inter-arrival time T.</strong> A smaller value of T means calls arrive more frequently,
+                so the server fills up faster.
+              </div>
+              <div class="note" style="background:var(--soft-teal)">
+                <strong>Service duration D.</strong> A larger value of D keeps channels occupied longer,
+                which raises the risk of blocking.
+              </div>
+              <div class="note" style="background:#fbf4e7">
+                <strong>Capacity N.</strong> Increasing the number of channels allows the server to absorb
+                more traffic before saturation appears.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card controls">
+          <h2 style="margin:0 0 14px; font-size:26px;">Scenario controls</h2>
+
+          <div class="control-block">
+            <div class="control-head">
+              <div>
+                <div class="control-label">Number of channels N</div>
+                <div class="control-hint">Server capacity</div>
+              </div>
+              <div class="badge" id="nVal"></div>
+            </div>
+            <input id="N" type="range" min="4" max="24" step="1" value="12" />
+          </div>
+
+          <div class="control-block">
+            <div class="control-head">
+              <div>
+                <div class="control-label">Mean inter-arrival time T (min)</div>
+                <div class="control-hint">Smaller T means higher arrival intensity</div>
+              </div>
+              <div class="badge" id="tVal"></div>
+            </div>
+            <input id="T" type="range" min="1" max="12" step="0.5" value="5" />
+          </div>
+
+          <div class="control-block">
+            <div class="control-head">
+              <div>
+                <div class="control-label">Mean service duration D (min)</div>
+                <div class="control-hint">Larger D means channels stay occupied longer</div>
+              </div>
+              <div class="badge" id="dVal"></div>
+            </div>
+            <input id="D" type="range" min="1" max="12" step="0.5" value="5" />
+          </div>
+
+          <div class="control-block">
+            <div class="control-head">
+              <div>
+                <div class="control-label">Simulation horizon (hours)</div>
+                <div class="control-hint">Observation window</div>
+              </div>
+              <div class="badge" id="hVal"></div>
+            </div>
+            <input id="H" type="range" min="4" max="24" step="1" value="12" />
+          </div>
+
+          <div class="button-row">
+            <button class="primary" onclick="rerun()">New run</button>
+            <button class="secondary" onclick="toggleMotion()" id="motionBtn">Motion on</button>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric">
+            <div class="metric-title">Acceptance rate</div>
+            <div class="metric-value" id="accRate"></div>
+            <div class="metric-sub" id="accSub"></div>
+          </div>
+          <div class="metric">
+            <div class="metric-title">Blocking probability</div>
+            <div class="metric-value" id="blockRate"></div>
+            <div class="metric-sub" id="blockSub"></div>
+          </div>
+          <div class="metric">
+            <div class="metric-title">Average busy channels</div>
+            <div class="metric-value" id="avgBusy"></div>
+            <div class="metric-sub" id="avgSub"></div>
+          </div>
+          <div class="metric">
+            <div class="metric-title">Traffic intensity</div>
+            <div class="metric-value" id="traffic"></div>
+            <div class="metric-sub">A = D / T</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card section">
+        <h2>Occupied channels over time</h2>
+        <p>The state process X(t) records the number of busy channels at each event time.</p>
+        <div id="stateChart" style="height:340px"></div>
+      </div>
+
+      <div class="card section">
+        <h2>Blocking comparison and convergence</h2>
+        <p>The running estimate stabilizes as the simulation progresses and moves toward the theoretical reference.</p>
+        <div id="convergenceChart" style="height:340px"></div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card section">
+        <h2>Channel occupancy map</h2>
+        <p>Each row is a channel and each column is a time block. Darker cells indicate longer occupancy during that interval.</p>
+        <div id="heatmapBox"></div>
+      </div>
+
+      <div>
+        <div class="card section" style="margin-bottom:18px;">
+          <h2>Channel utilization</h2>
+          <p>Because channels are chosen in index order, their utilization profile is especially informative.</p>
+          <div id="utilChart" style="height:280px"></div>
+        </div>
+
+        <div class="card section">
+          <h2>State distribution</h2>
+          <p>This chart shows the empirical proportion of time spent with 0, 1, 2, ..., N occupied channels.</p>
+          <div id="distChart" style="height:280px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card section">
+        <h2>Sensitivity to traffic intensity</h2>
+        <p>Theoretical blocking grows nonlinearly as the offered traffic increases.</p>
+        <div id="sensChart" style="height:320px"></div>
+      </div>
+
+      <div class="card section">
+        <h2>Interpretation panel</h2>
+        <div class="note-list">
+          <div class="note" style="background:#f9fbfd">
+            <strong>Problem.</strong> The server can process up to N simultaneous calls.
+            There is no waiting queue, so excess demand is lost immediately.
+          </div>
+          <div class="note" style="background:#f9fbfd">
+            <strong>Model.</strong> Inter-arrival times and service durations are exponential,
+            leading to an M/M/N/N loss system.
+          </div>
+          <div class="note" style="background:#f9fbfd">
+            <strong>Implementation.</strong> The simulation engine tracks arrival events,
+            the first available channel, release times, state occupancy, and rejections.
+          </div>
+          <div class="note" style="background:#f9fbfd">
+            <strong>Dashboard role.</strong> The room schema explains the phenomenon visually,
+            while the charts verify it through utilization, blocking, convergence, and state probabilities.
+          </div>
+          <div class="note" id="currentReading" style="background:var(--soft-teal)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const palette = {
+      text: '#10233F',
+      subtext: '#5E708C',
+      navy: '#153B6D',
+      teal: '#1E8E89',
+      mint: '#71C9C2',
+      red: '#C65757',
+      softBlue: '#DDE8F5',
+      softTeal: '#E2F3F1',
+      softRed: '#F8E5E2',
+      gold: '#C89B3C'
+    };
+
+    let seed = 12;
+    let motion = true;
+
+    function factorial(n) {
+      let result = 1;
+      for (let i = 2; i <= n; i++) result *= i;
+      return result;
+    }
+
+    function erlangB(N, A) {
+      let denominator = 0;
+      for (let k = 0; k <= N; k++) denominator += Math.pow(A, k) / factorial(k);
+      return (Math.pow(A, N) / factorial(N)) / denominator;
+    }
+
+    function mulberry32(value) {
+      let t = value >>> 0;
+      return function () {
+        t += 0x6d2b79f5;
+        let x = Math.imul(t ^ (t >>> 15), 1 | t);
+        x ^= x + Math.imul(x ^ (x >>> 7), 61 | x);
+        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function expSample(mean, rand) {
+      const u = Math.max(1e-12, 1 - rand());
+      return -mean * Math.log(u);
+    }
+
+    function buildSensitivityCurve(N) {
+      const points = [];
+      const values = [0.6, 1.2, 1.8, 2.4, 3.0, 3.6, 4.2, 4.8, 5.4, 6.0, 6.6, 7.2];
+
+      for (const A of values) {
+        const blocking = erlangB(N, A);
+        points.push({
+          traffic: A,
+          blocking: +(blocking * 100).toFixed(2),
+          utilization: +((A * (1 - blocking) / N) * 100).toFixed(2)
+        });
+      }
+
+      return points;
+    }
+
+    function simulateSystem({ N, T, D, hours, seed }) {
+      const rand = mulberry32(seed);
+      const endTime = hours * 60;
+
+      const channels = Array.from({ length: N }, (_, i) => ({
+        id: i + 1,
+        busyUntil: 0,
+        busyTime: 0,
+        accepted: 0,
+        segments: []
+      }));
+
+      let time = 0;
+      let nextArrival = expSample(T, rand);
+      let arrivals = 0;
+      let accepted = 0;
+      let rejected = 0;
+      let totalService = 0;
+      let maxBusy = 0;
+      let areaBusy = 0;
+      let lastEvent = 0;
+
+      const stateDur = Array.from({ length: N + 1 }, () => 0);
+      const stateSeries = [];
+      const running = [];
+      const eventSchema = [];
+
+      const busyCount = (t) => channels.filter((channel) => channel.busyUntil > t).length;
+
+      while (nextArrival < endTime) {
+        const currentBusy = busyCount(nextArrival);
+        areaBusy += currentBusy * (nextArrival - lastEvent);
+        stateDur[currentBusy] += nextArrival - lastEvent;
+
+        time = nextArrival;
+        lastEvent = time;
+        arrivals += 1;
+
+        let assigned = null;
+
+        for (const channel of channels) {
+          if (channel.busyUntil <= time) {
+            assigned = channel;
+            break;
+          }
+        }
+
+        if (assigned) {
+          const service = expSample(D, rand);
+          const release = Math.min(time + service, endTime);
+          assigned.busyUntil = release;
+          assigned.busyTime += Math.max(0, release - time);
+          assigned.accepted += 1;
+          assigned.segments.push({ start: time, end: release });
+
+          accepted += 1;
+          totalService += service;
+
+          eventSchema.push({
+            t: time,
+            channel: assigned.id,
+            status: 'accepted',
+            label: `Call ${arrivals}`
+          });
+        } else {
+          rejected += 1;
+          eventSchema.push({
+            t: time,
+            channel: null,
+            status: 'rejected',
+            label: `Call ${arrivals}`
+          });
+        }
+
+        const afterBusy = busyCount(time + 1e-6);
+        maxBusy = Math.max(maxBusy, afterBusy);
+
+        stateSeries.push({
+          minute: +time.toFixed(2),
+          busy: afterBusy,
+          accepted,
+          rejected
+        });
+
+        running.push({
+          minute: +time.toFixed(2),
+          blocking: arrivals ? +(100 * rejected / arrivals).toFixed(2) : 0,
+          busyMean: +((areaBusy / Math.max(time, 1e-6))).toFixed(2)
+        });
+
+        nextArrival += expSample(T, rand);
+      }
+
+      const finalBusy = busyCount(endTime);
+      areaBusy += finalBusy * (endTime - lastEvent);
+      stateDur[finalBusy] += endTime - lastEvent;
+
+      const channelUtilization = channels.map((channel) => ({
+        channel: `Ch ${channel.id}`,
+        utilization: +((100 * channel.busyTime) / endTime).toFixed(2),
+        calls: channel.accepted
+      }));
+
+      const stateDistribution = stateDur.map((duration, state) => ({
+        state: `${state}`,
+        probability: +((100 * duration) / endTime).toFixed(2)
+      }));
+
+      const heatmap = channels.map((channel) => {
+        const bins = [];
+        const steps = 24;
+
+        for (let i = 0; i < steps; i++) {
+          const start = (i / steps) * endTime;
+          const finish = ((i + 1) / steps) * endTime;
+
+          const overlap = channel.segments.reduce((sum, segment) => {
+            const a = Math.max(start, segment.start);
+            const b = Math.min(finish, segment.end);
+            return sum + Math.max(0, b - a);
+          }, 0);
+
+          bins.push({
+            slot: i,
+            label: `${Math.round(start)}-${Math.round(finish)} min`,
+            occupancy: overlap / (finish - start)
+          });
+        }
+
+        return { channel: channel.id, bins };
+      });
+
+      const trafficIntensity = D / T;
+      const blockingTheo = erlangB(N, trafficIntensity);
+      const blockingSim = arrivals ? rejected / arrivals : 0;
+
+      let saturationLevel = 'Stable';
+      if (blockingSim >= 0.12 || areaBusy / endTime >= 0.85 * N) saturationLevel = 'Saturated';
+      else if (blockingSim >= 0.05 || areaBusy / endTime >= 0.7 * N) saturationLevel = 'Heavy load';
+      else if (blockingSim >= 0.02 || areaBusy / endTime >= 0.55 * N) saturationLevel = 'Near saturation';
+
+      return {
+        summary: {
+          arrivals,
+          accepted,
+          rejected,
+          acceptanceRate: arrivals ? +(100 * accepted / arrivals).toFixed(2) : 0,
+          blockingSim: +(100 * blockingSim).toFixed(2),
+          blockingTheo: +(100 * blockingTheo).toFixed(2),
+          avgBusy: +(areaBusy / endTime).toFixed(2),
+          maxBusy,
+          totalService: +totalService.toFixed(2),
+          trafficIntensity: +trafficIntensity.toFixed(2),
+          saturationLevel,
+          hours,
+          N,
+          T,
+          D
+        },
+        stateSeries,
+        running,
+        channelUtilization,
+        stateDistribution,
+        heatmap,
+        eventSchema: eventSchema.slice(-18),
+        sensitivity: buildSensitivityCurve(N)
+      };
+    }
+
+    function currentParams() {
+      return {
+        N: Number(document.getElementById('N').value),
+        T: Number(document.getElementById('T').value),
+        D: Number(document.getElementById('D').value),
+        hours: Number(document.getElementById('H').value),
+        seed
+      };
+    }
+
+    function setPill(level) {
+      let bg = '#E2F3F1';
+      let fg = palette.teal;
+
+      if (level === 'Saturated') {
+        bg = '#F8E5E2';
+        fg = palette.red;
+      } else if (level === 'Heavy load') {
+        bg = '#FBF4E7';
+        fg = palette.gold;
+      } else if (level === 'Near saturation') {
+        bg = '#DDE8F5';
+        fg = palette.navy;
+      }
+
+      document.getElementById('statusPill').innerHTML =
+        `<div class="pill" style="background:${bg}; color:${fg}">
+          <span style="width:10px;height:10px;border-radius:50%;background:${fg};display:inline-block"></span>
+          ${level}
+        </div>`;
+    }
+
+    function renderRoom(data) {
+      const flowBox = document.getElementById('flowBox');
+      const overflowBox = document.getElementById('overflowBox');
+      const channelsGrid = document.getElementById('channelsGrid');
+
+      flowBox.innerHTML = '';
+      data.eventSchema
+        .filter((event) => event.status === 'accepted')
+        .slice(-10)
+        .forEach((event, idx) => {
+          const width = 55 + (idx % 5) * 8;
+          flowBox.innerHTML += `
+            <div class="flow-line">
+              <div class="dot"></div>
+              <div class="bar-bg"><div class="bar-fill" style="width:${width}%"></div></div>
+            </div>`;
+        });
+
+      overflowBox.innerHTML = data.summary.rejected > 0
+        ? `<div class="legend-box"><strong>Overflow visible.</strong><br>Rejected calls appear when all channels are simultaneously occupied.</div>`
+        : '';
+
+      channelsGrid.innerHTML = '';
+      data.channelUtilization.forEach((channel, idx) => {
+        const active = channel.utilization > (100 * data.summary.avgBusy) / Math.max(data.summary.N * 1.6, 1);
+
+        channelsGrid.innerHTML += `
+          <div class="channel ${active ? 'active' : ''}">
+            <div class="channel-head">
+              <span>Channel ${idx + 1}</span>
+              <span class="channel-pill">${active ? 'Active' : 'Standby'}</span>
+            </div>
+            <div class="mini-progress"><div style="width:${channel.utilization}%"></div></div>
+            <div style="margin-top:8px; font-size:12px; color:var(--subtext); display:flex; justify-content:space-between;">
+              <span>Utilization</span>
+              <span>${channel.utilization.toFixed(1)}%</span>
+            </div>
+          </div>`;
+      });
+    }
+
+    function renderHeatmap(heatmap) {
+      const box = document.getElementById('heatmapBox');
+      box.innerHTML = '';
+
+      heatmap.forEach((row) => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'heatmap-row';
+
+        rowDiv.innerHTML = `
+          <div class="heatmap-label">Ch ${row.channel}</div>
+          <div class="heatmap-grid">
+            ${row.bins.map((bin) => {
+              const alpha = 0.12 + bin.occupancy * 0.88;
+              return `<div class="heat-cell" title="${bin.label} | ${(bin.occupancy * 100).toFixed(1)}% occupied" style="background:rgba(30,142,137,${alpha})"></div>`;
+            }).join('')}
+          </div>`;
+
+        box.appendChild(rowDiv);
+      });
+    }
+
+    function chartLayout(xTitle, yTitle, yRange = null) {
+      return {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { l: 52, r: 18, t: 10, b: 52 },
+        xaxis: {
+          title: xTitle,
+          gridcolor: '#E8EDF4',
+          zeroline: false,
+          tickfont: { color: palette.subtext },
+          titlefont: { color: palette.subtext }
+        },
+        yaxis: {
+          title: yTitle,
+          gridcolor: '#E8EDF4',
+          zeroline: false,
+          tickfont: { color: palette.subtext },
+          titlefont: { color: palette.subtext },
+          range: yRange
+        },
+        legend: {
+          orientation: 'h',
+          y: 1.16,
+          x: 0,
+          font: { color: palette.subtext }
+        },
+        font: {
+          color: palette.text,
+          family: 'Inter, Arial, sans-serif'
+        }
+      };
+    }
+
+    function renderCharts(data) {
+      Plotly.newPlot('stateChart', [{
+        x: data.stateSeries.map((d) => d.minute),
+        y: data.stateSeries.map((d) => d.busy),
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: palette.teal, width: 3, shape: 'hv' },
+        fill: 'tozeroy',
+        fillcolor: 'rgba(30,142,137,0.20)',
+        hovertemplate: 'Time: %{x:.2f} min<br>Busy channels: %{y}<extra></extra>'
+      }], chartLayout('Time (min)', 'Busy channels', [0, data.summary.N]), {responsive: true});
+
+      Plotly.newPlot('convergenceChart', [
+        {
+          x: data.running.map((d) => d.minute),
+          y: data.running.map((d) => d.blocking),
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Running blocking %',
+          line: { color: palette.red, width: 3 }
+        },
+        {
+          x: data.running.map((d) => d.minute),
+          y: data.running.map((d) => d.busyMean),
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Running mean busy channels',
+          line: { color: palette.navy, width: 3 }
+        }
+      ], chartLayout('Time (min)', 'Value'), {responsive: true});
+
+      Plotly.newPlot('utilChart', [{
+        x: data.channelUtilization.map((d) => d.channel),
+        y: data.channelUtilization.map((d) => d.utilization),
+        type: 'bar',
+        marker: {
+          color: data.channelUtilization.map((_, i) => i % 2 === 0 ? palette.teal : palette.mint)
+        },
+        hovertemplate: '%{x}<br>Utilization: %{y:.2f}%<extra></extra>'
+      }], chartLayout('Channel', 'Utilization (%)'), {responsive: true});
+
+      Plotly.newPlot('distChart', [{
+        x: data.stateDistribution.map((d) => d.state),
+        y: data.stateDistribution.map((d) => d.probability),
+        type: 'bar',
+        marker: { color: palette.navy },
+        hovertemplate: 'State %{x}<br>Probability: %{y:.2f}%<extra></extra>'
+      }], chartLayout('State', 'Probability (%)'), {responsive: true});
+
+      Plotly.newPlot('sensChart', [
+        {
+          x: data.sensitivity.map((d) => d.traffic),
+          y: data.sensitivity.map((d) => d.blocking),
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Blocking %',
+          line: { color: palette.red, width: 3 }
+        },
+        {
+          x: data.sensitivity.map((d) => d.traffic),
+          y: data.sensitivity.map((d) => d.utilization),
+          type: 'scatter',
+          mode: 'lines',
+          name: 'Mean utilization %',
+          line: { color: palette.teal, width: 3 }
+        }
+      ], chartLayout('Traffic intensity A', 'Percent'), {responsive: true});
+    }
+
+    function updateMetrics(data) {
+      const summary = data.summary;
+
+      document.getElementById('nVal').textContent = summary.N;
+      document.getElementById('tVal').textContent = summary.T;
+      document.getElementById('dVal').textContent = summary.D;
+      document.getElementById('hVal').textContent = summary.hours;
+
+      document.getElementById('accRate').textContent = `${summary.acceptanceRate}%`;
+      document.getElementById('accSub').textContent = `${summary.accepted} accepted calls`;
+
+      document.getElementById('blockRate').textContent = `${summary.blockingSim}%`;
+      document.getElementById('blockSub').textContent = `Erlang-B: ${summary.blockingTheo}%`;
+
+      document.getElementById('avgBusy').textContent = summary.avgBusy;
+      document.getElementById('avgSub').textContent = `Maximum used: ${summary.maxBusy}/${summary.N}`;
+
+      document.getElementById('traffic').textContent = summary.trafficIntensity;
+      setPill(summary.saturationLevel);
+
+      const current = document.getElementById('currentReading');
+      current.style.background =
+        summary.saturationLevel === 'Saturated' ? '#F8E5E2' :
+        summary.saturationLevel === 'Heavy load' ? '#FBF4E7' :
+        '#E2F3F1';
+
+      current.innerHTML =
+        `<strong>Current reading.</strong> With N = ${summary.N}, T = ${summary.T} min, and D = ${summary.D} min,
+        the simulated blocking probability is ${summary.blockingSim}% and the theoretical reference is
+        ${summary.blockingTheo}%. The system is currently classified as ${summary.saturationLevel.toLowerCase()}.`;
+    }
+
+    function render() {
+      const data = simulateSystem(currentParams());
+      updateMetrics(data);
+      renderRoom(data);
+      renderHeatmap(data.heatmap);
+      renderCharts(data);
+    }
+
+    function rerun() {
+      seed += 1;
+      render();
+    }
+
+    function toggleMotion() {
+      motion = !motion;
+      document.getElementById('motionBtn').textContent = motion ? 'Motion on' : 'Motion off';
+    }
+
+    function applyPreset(name) {
+      const presets = {
+        underloaded: { N: 16, T: 8, D: 4, H: 12 },
+        balanced: { N: 12, T: 5, D: 5, H: 12 },
+        near: { N: 10, T: 4, D: 6, H: 12 },
+        saturated: { N: 8, T: 3, D: 7, H: 12 }
+      };
+
+      const preset = presets[name];
+      document.getElementById('N').value = preset.N;
+      document.getElementById('T').value = preset.T;
+      document.getElementById('D').value = preset.D;
+      document.getElementById('H').value = preset.H;
+      render();
+    }
+
+    ['N', 'T', 'D', 'H'].forEach((id) => {
+      document.getElementById(id).addEventListener('input', render);
+    });
+
+    render();
+  </script>
+</body>
+</html>
